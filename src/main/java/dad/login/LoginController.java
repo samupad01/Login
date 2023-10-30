@@ -18,7 +18,7 @@ public class LoginController {
         model = new LoginModel();
         view = new LoginView();
 
-        // Escuchadores para actualizar el modelo en función de los cambios en la vista
+        //Listeners para actualizar el modelo en función de los cambios en la vista
         view.getUserField().textProperty().addListener((obs, oldText, newText) -> {
             model.setUsername(newText);
         });
@@ -44,7 +44,7 @@ public class LoginController {
         if (model.isUseLdap()) {
             authService = new LdapAuthService();
         } else {
-            authService = new FileAuthService(); // Aquí asumimos que tienes una implementación para autenticar con un archivo.
+            authService = new FileAuthService();
         }
 
         try {
