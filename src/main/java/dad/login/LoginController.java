@@ -1,52 +1,82 @@
 package dad.login;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
+
 import dad.login.auth.AuthService;
 import dad.login.auth.LdapAuthService;
 import dad.login.auth.FileAuthService;
-import javafx.scene.Scene;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.scene.control.Alert.AlertType;
-import javafx.stage.Stage;
 
-public class LoginController {
+public class LoginController implements Initializable {
 
-    private LoginModel model;
-    private LoginView view;
+    @FXML
+    private VBox view;
+
+    @FXML
+    private TextField userField;
+
+    @FXML
+    private PasswordField passwordField;
+
+    @FXML
+    private CheckBox ldapCheckBox;
+
+    @FXML
+    private Button loginButton;
+
+    @FXML
+    private Button cancelButton;
+
+    private LoginModel model = new LoginModel(); // Inicialización en línea
     private AuthService authService;
 
     public LoginController() {
-        model = new LoginModel();
-        view = new LoginView();
+        // Carga la vista desde el archivo FXML
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LoginView.fxml"));
+            loader.setController(this);
+            loader.load();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        //Listeners para actualizar el modelo en función de los cambios en la vista
-        view.getUserField().textProperty().addListener((obs, oldText, newText) -> {
-            model.setUsername(newText);
-        });
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        userField.textProperty().bindBidirectional(model.usernameProperty());
+        passwordField.textProperty().bindBidirectional(model.passwordProperty());
+        ldapCheckBox.selectedProperty().bindBidirectional(model.useLdapProperty());
 
-        view.getPasswordField().textProperty().addListener((obs, oldText, newText) -> {
-            model.setPassword(newText);
-        });
+        loginButton.setOnAction(e -> login());
+        cancelButton.setOnAction(e -> System.exit(0));
+    }
 
-        view.getLdapCheckBox().selectedProperty().addListener((obs, wasSelected, isSelected) -> {
-            model.setUseLdap(isSelected);
-        });
-
-        // Evento del botón de acceso
-        view.getLoginButton().setOnAction(e -> login());
-
-        // Evento del botón de cancelar
-        view.getCancelButton().setOnAction(e -> System.exit(0));
+    public VBox getView() {
+        return view;
     }
 
     private void login() {
         boolean isAuthenticated = false;
 
+        // Decidir qué servicio de autenticación usar
         if (model.isUseLdap()) {
             authService = new LdapAuthService();
         } else {
             authService = new FileAuthService();
         }
 
+        // Intentar autenticar al usuario
         try {
             isAuthenticated = authService.login(model.getUsername(), model.getPassword());
         } catch (Exception e) {
@@ -55,12 +85,13 @@ public class LoginController {
             return;
         }
 
+        // Procesar el resultado de la autenticación
         if (isAuthenticated) {
             showAlert(AlertType.INFORMATION, "Acceso permitido", "Las credenciales de acceso son válidas.");
-            System.exit(0); // o puedes redirigir al usuario a otra ventana/pantalla
+            // Aquí debes redirigir al usuario a la siguiente pantalla o cerrar la sesión.
         } else {
             showAlert(AlertType.ERROR, "Acceso denegado", "El usuario y/o la contraseña no son válidos.");
-            view.getPasswordField().clear();
+            passwordField.clear();
         }
     }
 
@@ -70,18 +101,9 @@ public class LoginController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
-    public void show(Stage primaryStage) {
-        primaryStage.setTitle("Login");
-        primaryStage.setScene(new Scene(view.getView(), 300, 200));
-        primaryStage.show();
-    }
-
-    public LoginView getView() {
-        return view;
-    }
-
 }
+
+
 
 
 
